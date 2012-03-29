@@ -80,25 +80,29 @@
 (defrule top-left-free
     (not (occupied (square 1)))
     =>
-    (printout t "Take top left")
+    (place-piece 1 player)
+    (printout t "Top left chosen")
     )
 
 (defrule top-right-free
     (not (occupied (square 3)))
     =>
-    (printout t "Take top left")
+    (place-piece 3 player)
+    (printout t "Top right chosen")
     )
 
 (defrule bottom-left-free
     (not (occupied (square 7)))
     =>
-    (printout t "Take top left")
+    (place-piece 7 player)
+    (printout t "Bottom left chosen")
     )
 
 (defrule bottom-right-free
     (not (occupied (square 9)))
     =>
-    (printout t "Take top left")
+    (place-piece 9 player)
+    (printout t "Bottom right chosen")
     )
 
 /*End of rule 6 */
