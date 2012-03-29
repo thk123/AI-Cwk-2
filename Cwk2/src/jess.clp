@@ -3,10 +3,15 @@
     (slot sq1) 
     (slot sq2) 
     (slot sq3))
+
 (deftemplate occupied 
     (slot square)	
     (slot player)
     )
+
+
+(deffacts inital-fact
+    (turn "X"))
 
 (deffacts lines
     (line (sq1 1) (sq2 2) (sq3 3))
@@ -24,6 +29,20 @@
 	(occupied (square 2) (player "X"))
 	;(occupied (square 3) (player "X"))
     )
+
+(deffunction not-player ()
+    (
+    	if(eq turn "X") then 
+        (
+        	return "O"
+        )
+        else
+        (
+            return "X"
+        )    
+    )
+)
+
 
 (defrule one
     (line (sq1 ?sq1) (sq2 ?sq1) (sq3 ?sq3))
@@ -55,10 +74,42 @@
     (printout t "two" crlf)
 )
 (defrule six 
-    (eq 1 1) 
+    (not( occupied (square ?x &: (or (eq ?x 3) (eq ?x 1) (eq ?x 7) (eq ?x 9)))))
+    ;(not (occupied (square ?x &: )) ) 
     => 
-    (printout t "two" crlf)
+    (printout t "There is a corner square free" crlf)
 )
+
+/* ***************************************
+ Rules for choosing corner by rule 6 
+ *****************************************/
+
+(defrule top-left-free
+    (not (occupied (square 1)))
+    =>
+    (printout t "Take top left")
+    )
+
+(defrule top-right-free
+    (not (occupied (square 3)))
+    =>
+    (printout t "Take top left")
+    )
+
+(defrule bottom-left-free
+    (not (occupied (square 7)))
+    =>
+    (printout t "Take top left")
+    )
+
+(defrule bottom-right-free
+    (not (occupied (square 9)))
+    =>
+    (printout t "Take top left")
+    )
+
+/*End of rule 6 */
+
 (defrule seven 
     (eq 1 1) 
     => 
