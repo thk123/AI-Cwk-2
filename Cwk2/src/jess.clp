@@ -90,6 +90,7 @@
     =>
     (printout t "Take top left" crlf)
     (place-piece 1 ?playing)
+    (printout t "Top left chosen")
     )
 
 (defrule top-right-free
