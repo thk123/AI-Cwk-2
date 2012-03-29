@@ -19,30 +19,28 @@
     (line (sq1 3) (sq2 5) (sq3 7))
 )
 
-(deffacts oneline
-    (occupied (square 1) (player "X"))
-	(occupied (square 2) (player "X"))
-	;(occupied (square 3) (player "X"))
+(deffunction place-piece (?location ?piece)
+    (
+        assert(occupied (square ?location) (player ?piece))
     )
+)
 
 (defrule one
-    (line (sq1 ?sq1) (sq2 ?sq1) (sq3 ?sq3))
-    (occupied {square != ?sq3})
+    (eq 1 1)
      =>
          (printout t "one" crlf)
 )
 
-;(deffunction twoAdjacent (line))
-
 (defrule two 
-    (eq 1 1) 
+    ?retracter <- (occupied (square 1))
     => 
     (printout t "two" crlf)
+    (retract ?retracter)
 )
 (defrule three 
-    (eq 1 1) 
+    (equals 1 0) 
     => 
-    (printout t "two" crlf)
+    (printout t "three" crlf)
 )
 (defrule four 
     (eq 1 1) 
@@ -50,12 +48,13 @@
     (printout t "two" crlf)
 )
 (defrule five 
-    (eq 1 1) 
+    (not (occupied (square 5)))
     => 
-    (printout t "two" crlf)
+    (place-piece 5 "X")
+    (printout t "five" crlf)
 )
 (defrule six 
-    (eq 1 1) 
+    (eq 1 1)
     => 
     (printout t "two" crlf)
 )
@@ -65,5 +64,7 @@
     (printout t "two" crlf)
 )
 
+
 (reset)
+;(agenda)
 (run)
