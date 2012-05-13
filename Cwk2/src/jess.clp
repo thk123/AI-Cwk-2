@@ -86,6 +86,18 @@
     (square 9)
 )
 
+(deffacts equalsquares
+    (squareequals 1 1)
+    (squareequals 2 2)
+    (squareequals 3 3)
+    (squareequals 4 4)
+    (squareequals 5 5)
+    (squareequals 6 6)
+    (squareequals 7 7)
+    (squareequals 8 8)
+    (squareequals 9 9)
+    (squareequals 0 0))
+
 (assert (state "playing"))
 
 (deffunction place-piece (?location ?playing)
@@ -149,8 +161,19 @@
 (defrule three 
     (declare (salience 5))
     ?playing <- (state "playing")
-    (equals 1 0) 
+    (line (sq1 ?x) (sq2 ?y) (sq3 ?z) ) ;Find a line
+    (line (sq1 ?a) (sq2 ?b) (sq3 ?z) ) ;Find a different line that shares a square with the first line
+    
+    (not (squareequals ?x ?a)) ;check they are distinct lines
+    (not (squareequals ?y ?b))
+    
+    (occupied (square ?x) (player ?*player*)) ; We want one end of the first line to be occupied 
+    (occupied (square ?a) (player ?*player*)) ; And one end of the other line to be occupied
+    (not (occupied (square ?y))) ; The other squares need to be not occupied 
+    (not (occupied (square ?b)))
+    (not (occupied (square ?z)))
     => 
+    (place-piece ?z ?playing)
     	(printout t "three" crlf)
 )
 /* ***************************************
