@@ -1,4 +1,4 @@
-(watch all)
+;(watch all)
 (deftemplate line 
     (slot sq1) 
     (slot sq2) 
@@ -9,9 +9,7 @@
     (slot player)
     )
 
-
-(deffacts inital-fact
-    (turn "X"))
+(defglobal ?*player* = "X")
 
 (deffacts lines
     (line (sq1 1) (sq2 2) (sq3 3))
@@ -24,15 +22,16 @@
     (line (sq1 3) (sq2 5) (sq3 7))
 )
 
-(deffunction place-piece (?location ?piece)
-    (
-        assert(occupied (square ?location) (player ?piece))
-    )
+(assert (state "playing"))
+
+(deffunction place-piece (?location ?playing)
+    (assert (occupied (square ?location) (player ?*player*)))
+    (retract ?playing)
 )
 
 (deffunction not-player ()
     (
-    	if(eq turn "X") then 
+    	if(eq ?*player* "X") then 
         (
         	return "O"
         )
@@ -45,31 +44,39 @@
 
 
 (defrule one
+    ?playing <- (state "playing")
     (eq 1 1)
      =>
          (printout t "one" crlf)
 )
 
 (defrule two 
-    ?retracter <- (occupied (square 1))
+    ?playing <- (state "playing")
+    (equals 1 7)
     => 
-    (printout t "two" crlf)
-    (retract ?retracter)
 )
 (defrule three 
+    ?playing <- (state "playing")
     (equals 1 0) 
     => 
     (printout t "three" crlf)
 )
 (defrule four 
+    ?playing <- (state "playing")
     (eq 1 1) 
     => 
-    (printout t "two" crlf)
+    (printout t "four" crlf)
 )
-(defrule five 
+
+/* ***************************************
+ Rule for choosing centre by rule 5 
+ *****************************************/
+
+(defrule centre-piece 
+    ?playing <- (state "playing")
     (not (occupied (square 5)))
     => 
-    (place-piece 5 "X")
+    (place-piece 5 ?playing)
     (printout t "five" crlf)
 )
 
@@ -78,41 +85,58 @@
  *****************************************/
 
 (defrule top-left-free
+    ?playing <- (state "playing")
     (not (occupied (square 1)))
     =>
-    (place-piece 1 player)
+    (printout t "Take top left" crlf)
+    (place-piece 1 ?playing)
     (printout t "Top left chosen")
     )
 
 (defrule top-right-free
+    ?playing <- (state "playing")
     (not (occupied (square 3)))
     =>
-    (place-piece 3 player)
-    (printout t "Top right chosen")
+    (printout t "Take top right" crlf)
+    (place-piece 3 ?playing)
     )
 
 (defrule bottom-left-free
+    ?playing <- (state "playing")
     (not (occupied (square 7)))
     =>
-    (place-piece 7 player)
-    (printout t "Bottom left chosen")
+    (printout t "Take bottom left" crlf)
+    (place-piece 7 ?playing)
     )
 
 (defrule bottom-right-free
+    ?playing <- (state "playing")
     (not (occupied (square 9)))
     =>
-    (place-piece 9 player)
-    (printout t "Bottom right chosen")
+    (printout t "Take bottom right" crlf)
+    (place-piece 9 ?playing)
     )
 
 /*End of rule 6 */
 
 (defrule seven 
+    ?playing <- (state "playing")
     (eq 1 1) 
     => 
-    (printout t "two" crlf)
+    (printout t "seven" crlf)
 )
 
+(defrule swap-player
+    (not(state "playing"))
+    =>
+    (
+        if(eq ?*player* "X") then ?*player* <- "O"
+    	else ?*player* <- "X"
+    )
+    (assert(state "playing"))
+    (printout t "CURRENT PLAYER IS " ?*player* crlf)
+    
+)
 
 (reset)
 ;(agenda)
