@@ -12,19 +12,69 @@
 (defglobal ?*player* = "X")
 
 (deffacts board
+    (line (sq1 1) (sq2 3) (sq3 2))
     (line (sq1 1) (sq2 2) (sq3 3))
+    (line (sq1 2) (sq2 3) (sq3 1))
+    (line (sq1 2) (sq2 1) (sq3 3))
+    (line (sq1 3) (sq2 2) (sq3 1))
+    (line (sq1 3) (sq2 1) (sq3 2))
+    
     (line (sq1 4) (sq2 5) (sq3 6))
+    (line (sq1 4) (sq2 6) (sq3 5))
+    (line (sq1 5) (sq2 4) (sq3 6))
+    (line (sq1 5) (sq2 6) (sq3 4))
+    (line (sq1 6) (sq2 5) (sq3 4))
+    (line (sq1 6) (sq2 4) (sq3 5))
+    
     (line (sq1 7) (sq2 8) (sq3 9))
+    (line (sq1 7) (sq2 9) (sq3 8))
+    (line (sq1 8) (sq2 7) (sq3 9))
+    (line (sq1 8) (sq2 9) (sq3 7))
+    (line (sq1 9) (sq2 8) (sq3 7))
+    (line (sq1 9) (sq2 7) (sq3 8))
+    
     (line (sq1 1) (sq2 4) (sq3 7))
+    (line (sq1 1) (sq2 7) (sq3 4))
+    (line (sq1 4) (sq2 1) (sq3 7))
+    (line (sq1 4) (sq2 7) (sq3 1))
+    (line (sq1 7) (sq2 4) (sq3 1))
+    (line (sq1 7) (sq2 1) (sq3 4))
+    
     (line (sq1 2) (sq2 5) (sq3 8))
+    (line (sq1 2) (sq2 8) (sq3 5))
+    (line (sq1 5) (sq2 2) (sq3 8))
+    (line (sq1 5) (sq2 8) (sq3 2))
+    (line (sq1 8) (sq2 5) (sq3 2))
+    (line (sq1 8) (sq2 2) (sq3 5))
+    
     (line (sq1 3) (sq2 6) (sq3 9))
+    (line (sq1 3) (sq2 9) (sq3 6))
+    (line (sq1 6) (sq2 3) (sq3 9))
+    (line (sq1 6) (sq2 9) (sq3 3))
+    (line (sq1 9) (sq2 6) (sq3 3))
+    (line (sq1 9) (sq2 3) (sq3 6))
+    
     (line (sq1 1) (sq2 5) (sq3 9))
+    (line (sq1 1) (sq2 9) (sq3 5))
+    (line (sq1 5) (sq2 1) (sq3 9))
+    (line (sq1 5) (sq2 9) (sq3 1))
+    (line (sq1 9) (sq2 5) (sq3 1))
+    (line (sq1 9) (sq2 1) (sq3 5))
+    
     (line (sq1 3) (sq2 5) (sq3 7))
+    (line (sq1 3) (sq2 7) (sq3 5))
+    (line (sq1 5) (sq2 3) (sq3 7))
+    (line (sq1 5) (sq2 7) (sq3 3))
+    (line (sq1 7) (sq2 3) (sq3 5))
+    (line (sq1 7) (sq2 5) (sq3 3))
+    
+    (centre 5)
+    
     (corner 1)
     (corner 3)
-    (centre 5)
     (corner 7)
     (corner 9)
+    
     (square 1)
     (square 2)
     (square 3)
@@ -36,7 +86,10 @@
     (square 9)
 )
 
-(deffacts corner)
+(deffacts players
+    (equals "X" "X")
+    (equals "O" "O")
+)
 
 (assert (state "playing"))
 
@@ -65,8 +118,12 @@
     (declare (salience 7))
     ?playing <- (state "playing")
     (line (sq1 ?x) (sq2 ?y) (sq3 ?z))
+    (occupied (square ?x) (player ?*player*))
+    (occupied (square ?y) (player ?*player*))
+    (not(occupied (square ?z)))
      =>
-         (printout t "one" crlf)
+         (place-piece(?z ?playing))
+         (printout t "rule one: " ?z crlf)
 )
 
 /* ***************************************
@@ -75,8 +132,14 @@
 (defrule two 
     (declare (salience 6))
     ?playing <- (state "playing")
-    (equals 1 7)
-    => 
+    (line (sq1 ?x) (sq2 ?y) (sq3 ?z))
+    (occupied (square ?x) (player ?player))
+    (occupied (square ?y) (player ?player))
+    (not(equals ?player ?*player*))
+    (not(occupied (square ?z)))
+     =>
+         (place-piece(?z ?playing))
+         (printout t "rule one: " ?z crlf) 
 )
 /* ***************************************
  Rule 3: choose a square that gives you a double row 
@@ -86,7 +149,7 @@
     ?playing <- (state "playing")
     (equals 1 0) 
     => 
-    (printout t "three" crlf)
+    	(printout t "three" crlf)
 )
 /* ***************************************
  Rule 4 : choose a square that would give them a double row 
@@ -96,7 +159,7 @@
     ?playing <- (state "playing")
     (eq 1 1) 
     => 
-    (printout t "four" crlf)
+    	(printout t "four" crlf)
 )
 
 /* ***************************************
@@ -109,8 +172,8 @@
     (centre ?x)
     (not (occupied (square ?x)))
     => 
-    (place-piece ?x ?playing)
-    (printout t "five" crlf)
+	    (place-piece ?x ?playing)
+	    (printout t "five" crlf)
 )
 
 /* ***************************************
@@ -123,9 +186,9 @@
     (corner ?x)
     (not (occupied (square ?x)))
     =>
-    (printout t "Take corner: " ?x crlf)
-    (place-piece ?x ?playing)
-    )
+	    (printout t "Take corner: " ?x crlf)
+	    (place-piece ?x ?playing)
+)
 
 /* ***************************************
  Rule 7 : choose another square
