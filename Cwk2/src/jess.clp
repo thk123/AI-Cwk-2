@@ -86,11 +86,6 @@
     (square 9)
 )
 
-(deffacts players
-    (equals "X" "X")
-    (equals "O" "O")
-)
-
 (assert (state "playing"))
 
 (deffunction place-piece (?location ?playing)
@@ -124,6 +119,8 @@
      =>
          (place-piece ?z ?playing)
          (printout t "rule one: " ?z crlf)
+    	 (retract ?playing)
+    	 (assert (state "ended"))
 )
 
 /* ***************************************
@@ -131,12 +128,17 @@
  *****************************************/
 (defrule two 
     (declare (salience 6))
+    
     ?playing <- (state "playing")
+    
     (line (sq1 ?x) (sq2 ?y) (sq3 ?z))
-    (occupied (square ?x) (player ?player))
-    (occupied (square ?y) (player ?player))
-    (not(equals ?player ?*player*))
+    
+    (occupied (square ?x) (player ?player&:(eq ?player ~?*player*)))
+    
+    (occupied (square ?y) (player ?player&:(eq ?player ~?*player*)))
+    
     (not(occupied (square ?z)))
+    
      =>
          (place-piece ?z ?playing)
          (printout t "rule two: " ?z crlf) 
@@ -216,8 +218,8 @@
     
 )
 
-(defrule printboard
-    (not(state playing))
+(defrule checkended
+    ?state <- (state ~"playing")
     (occupied (player ?1) (square 1))
     (occupied (player ?2) (square 2))
     (occupied (player ?3) (square 3))
@@ -228,7 +230,8 @@
     (occupied (player ?8) (square 8))
     (occupied (player ?9) (square 9))
     =>
-    (printout t ?1 ?2 ?3 crlf ?4 ?5 ?6 crlf ?7 ?8 ?9 crlf)
+    	(retract ?state)
+    	(printout t ?1 ?2 ?3 crlf ?4 ?5 ?6 crlf ?7 ?8 ?9 crlf)
 )
 
 (reset)
