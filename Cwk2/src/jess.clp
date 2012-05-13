@@ -11,7 +11,7 @@
 
 (defglobal ?*player* = "X")
 
-(deffacts lines
+(deffacts board
     (line (sq1 1) (sq2 2) (sq3 3))
     (line (sq1 4) (sq2 5) (sq3 6))
     (line (sq1 7) (sq2 8) (sq3 9))
@@ -20,7 +20,23 @@
     (line (sq1 3) (sq2 6) (sq3 9))
     (line (sq1 1) (sq2 5) (sq3 9))
     (line (sq1 3) (sq2 5) (sq3 7))
+    (corner 1)
+    (corner 3)
+    (centre 5)
+    (corner 7)
+    (corner 9)
+    (square 1)
+    (square 2)
+    (square 3)
+    (square 4)
+    (square 5)
+    (square 6)
+    (square 7)
+    (square 8)
+    (square 9)
 )
+
+(deffacts corner)
 
 (assert (state "playing"))
 
@@ -42,26 +58,41 @@
     )
 )
 
-
+/* ***************************************
+ Rule 1 : choose a square to get 3 in a row 
+ *****************************************/
 (defrule one
+    (declare (salience 7))
     ?playing <- (state "playing")
-    (eq 1 1)
+    (line (sq1 ?x) (sq2 ?y) (sq3 ?z))
      =>
          (printout t "one" crlf)
 )
 
+/* ***************************************
+ Rule 2: choose a square which would give them 3 in a row
+ *****************************************/
 (defrule two 
+    (declare (salience 6))
     ?playing <- (state "playing")
     (equals 1 7)
     => 
 )
+/* ***************************************
+ Rule 3: choose a square that gives you a double row 
+ *****************************************/
 (defrule three 
+    (declare (salience 5))
     ?playing <- (state "playing")
     (equals 1 0) 
     => 
     (printout t "three" crlf)
 )
+/* ***************************************
+ Rule 4 : choose a square that would give them a double row 
+ *****************************************/
 (defrule four 
+    (declare (salience 4))
     ?playing <- (state "playing")
     (eq 1 1) 
     => 
@@ -69,73 +100,72 @@
 )
 
 /* ***************************************
- Rule for choosing centre by rule 5 
+ Rule 5 : choose centre square
  *****************************************/
 
 (defrule centre-piece 
+    (declare (salience 3))
     ?playing <- (state "playing")
-    (not (occupied (square 5)))
+    (centre ?x)
+    (not (occupied (square ?x)))
     => 
-    (place-piece 5 ?playing)
+    (place-piece ?x ?playing)
     (printout t "five" crlf)
 )
 
 /* ***************************************
- Rules for choosing corner by rule 6 
+ Rule 6: choose corner square
  *****************************************/
 
-(defrule top-left-free
+(defrule place-corner
+    (declare (salience 2))
     ?playing <- (state "playing")
-    (not (occupied (square 1)))
+    (corner ?x)
+    (not (occupied (square ?x)))
     =>
-    (printout t "Take top left" crlf)
-    (place-piece 1 ?playing)
-    (printout t "Top left chosen")
+    (printout t "Take corner: " ?x crlf)
+    (place-piece ?x ?playing)
     )
 
-(defrule top-right-free
-    ?playing <- (state "playing")
-    (not (occupied (square 3)))
-    =>
-    (printout t "Take top right" crlf)
-    (place-piece 3 ?playing)
-    )
-
-(defrule bottom-left-free
-    ?playing <- (state "playing")
-    (not (occupied (square 7)))
-    =>
-    (printout t "Take bottom left" crlf)
-    (place-piece 7 ?playing)
-    )
-
-(defrule bottom-right-free
-    ?playing <- (state "playing")
-    (not (occupied (square 9)))
-    =>
-    (printout t "Take bottom right" crlf)
-    (place-piece 9 ?playing)
-    )
-
-/*End of rule 6 */
+/* ***************************************
+ Rule 7 : choose another square
+ *****************************************/
 
 (defrule seven 
+    (declare (salience 1))
     ?playing <- (state "playing")
-    (eq 1 1) 
+    (square ?x)
+    (not (occupied (square ?x)))
     => 
-    (printout t "seven" crlf)
+    (printout t "random square: " ?x crlf)
+    (place-piece ?x ?playing)
 )
 
 (defrule swap-player
     (not(state "playing"))
     =>
     (
-        if(eq ?*player* "X") then ?*player* <- "O"
-    	else ?*player* <- "X"
+        if(eq* ?*player* "X") then (bind ?*player* "O")
+    	else (bind ?*player* "X")
     )
     (assert(state "playing"))
     (printout t "CURRENT PLAYER IS " ?*player* crlf)
     
+)
+
+(defrule printboard
+    (not(state playing))
+    (occupied (player ?1) (square 1))
+    (occupied (player ?2) (square 2))
+    (occupied (player ?3) (square 3))
+    (occupied (player ?4) (square 4))
+    (occupied (player ?5) (square 5))
+    (occupied (player ?6) (square 6))
+    (occupied (player ?7) (square 7))
+    (occupied (player ?8) (square 8))
+    (occupied (player ?9) (square 9))
+    =>
+    (printout t ?1 ?2 ?3 crlf ?4 ?5 ?6 crlf ?7 ?8 ?9 crlf)
 )
 
 (reset)
