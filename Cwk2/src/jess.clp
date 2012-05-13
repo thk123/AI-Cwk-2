@@ -122,7 +122,7 @@
     (occupied (square ?y) (player ?*player*))
     (not(occupied (square ?z)))
      =>
-         (place-piece(?z ?playing))
+         (place-piece ?z ?playing)
          (printout t "rule one: " ?z crlf)
 )
 
@@ -138,8 +138,8 @@
     (not(equals ?player ?*player*))
     (not(occupied (square ?z)))
      =>
-         (place-piece(?z ?playing))
-         (printout t "rule one: " ?z crlf) 
+         (place-piece ?z ?playing)
+         (printout t "rule two: " ?z crlf) 
 )
 /* ***************************************
  Rule 3: choose a square that gives you a double row 
@@ -232,5 +232,5 @@
 )
 
 (reset)
-;(agenda)
+(agenda)
 (run)
