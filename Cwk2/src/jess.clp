@@ -84,8 +84,15 @@
 (defrule three 
     (declare (salience 5))
     ?playing <- (state "playing")
-    (equals 1 0) 
+    (line (sq1 ?x) (sq2 ?y) (sq3 ?z) ) ;Find a line
+    (line (sq1 ?a) (sq2 ?b) (sq3 ?z) ) ;Find a different line that shares a square with the first line
+    (occupied (square ?x) (player ?*player*)) ; We want one end of the first line to be occupied 
+    (occupied (square ?a) (player ?*player*)) ; And one end of the other line to be occupied
+    (not (occupied (square ?y))) ; The other squares need to be not occupied 
+    (not (occupied (square ?b)))
+    (not (occupied (square ?z)))
     => 
+    (place-piece ?z ?playing)
     (printout t "three" crlf)
 )
 /* ***************************************
