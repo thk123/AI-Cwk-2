@@ -86,6 +86,9 @@
     (square 9)
 )
 
+(deffacts playerequals
+    (equals "X" "X")
+    (equals "O" "O"))
 
 (deffunction swapplayer()
     if(eq ?*player* "X") then (
@@ -134,19 +137,20 @@
     (declare (salience 7))	
     ?playing <- (state "playing")
     (line (sq1 ?x) (sq2 ?y) (sq3 ?z))
-    ;(occupied (square ?x) (player ?*player*))
-    ;(occupied (square ?y) (player ?*player*))
-    (occupied (square ?x) (player ?player&:(eq ?player ?*player*)))
-    (occupied (square ?y) (player ?player&:(eq ?player ?*player*)))
-    
+    (occupied (square ?x) (player ?p1))
+    (not(equals ?p1 ?*player*))
+    (occupied (square ?y) (player ?p2))
+    (not(equals ?p2 ?*player*))
     (not(occupied (square ?z)))
      =>
-    	 (facts)
+    	 ;(facts)
     	 (printout t "rule one: " ?z  ?*player* crlf)
+    	 (printout t "square: " ?x (eq ?p1 ?*player*) crlf)
+    	 (printout t "square: " ?y (eq ?p2 ?*player*) crlf)
          (assert (occupied (square ?z) (player ?*player*)))
     	 (retract ?playing)
     	 (assert (state "ended"))
-    	 (facts)
+    	 ;(facts)
 )
 
 /* ***************************************
@@ -156,8 +160,10 @@
     (declare (salience 6))
     ?playing <- (state "playing")
     (line (sq1 ?x) (sq2 ?y) (sq3 ?z))
-    (occupied (square ?x) (player ?player&:(neq ?player ?*player*)))
-    (occupied (square ?y) (player ?player&:(neq ?player ?*player*)))
+    (occupied (square ?x) (player ?p1))
+    (not(equals ?p1 ?*player*))
+    (occupied (square ?y) (player ?p2))
+    (not(equals ?p2 ?*player*))
     (not(occupied (square ?z)))
      =>
     	 (printout t "rule two: " ?z crlf)
@@ -188,9 +194,17 @@
 (defrule four 
     (declare (salience 4))
     ?playing <- (state "playing")
-    (eq 1 1) 
+    (line (sq1 ?x) (sq2 ?y) (sq3 ?z) ) ;Find a line
+    (line (sq1 ?a&:(eq ?a ~?x)) (sq2 ?b&:(eq ?b ~?y)) (sq3 ?z) ) ;Find a different line that shares a square with the first line
+    
+    (occupied (square ?x) (player ?player&:(neq ?player ?*player*))) ; We want one end of the first line to be occupied 
+    (occupied (square ?a) (player ?player&:(neq ?player ?*player*))) ; And one end of the other line to be occupied
+    (not (occupied (square ?y))) ; The other squares need to be not occupied 
+    (not (occupied (square ?b)))
+    (not (occupied (square ?z)))
     => 
-    	(printout t "four" crlf)
+    (printout t "three: " ?z ?player crlf)
+    (place-piece ?z ?playing)
 )
 
 /* ***************************************
