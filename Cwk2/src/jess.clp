@@ -141,10 +141,12 @@
     
     (not(occupied (square ?z)))
      =>
-    (printout t "rule one: " ?z  ?*player* crlf)
-         (place-piece ?z ?playing)
+    	 (facts)
+    	 (printout t "rule one: " ?z  ?*player* crlf)
+         (assert (occupied (square ?z) (player ?*player*)))
     	 (retract ?playing)
     	 (assert (state "ended"))
+    	 (facts)
 )
 
 /* ***************************************
@@ -152,21 +154,14 @@
  *****************************************/
 (defrule two 
     (declare (salience 6))
-    
     ?playing <- (state "playing")
-    
     (line (sq1 ?x) (sq2 ?y) (sq3 ?z))
-    
-    (occupied (square ?x) (player ?player&:(eq ?player ~?*player*)))
-    
-    (occupied (square ?y) (player ?player&:(eq ?player ~?*player*)))
-    
+    (occupied (square ?x) (player ?player&:(neq ?player ?*player*)))
+    (occupied (square ?y) (player ?player&:(neq ?player ?*player*)))
     (not(occupied (square ?z)))
-    
      =>
-    (printout t "rule two: " ?z crlf)
-         (place-piece ?z ?playing)
-         
+    	 (printout t "rule two: " ?z crlf)
+         (place-piece ?z ?playing)       
 )
 /* ***************************************
  Rule 3: choose a square that gives you a double row 
@@ -223,7 +218,7 @@
     (corner ?x)
     (not (occupied (square ?x)))
     =>
-	    (printout t "Take corner: " ?x ?*player* crlf)
+	    (printout t "Take corner: " ?x ?*player* ?playing crlf)
 	    (place-piece ?x ?playing)
 )
 
