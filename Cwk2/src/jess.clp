@@ -9,7 +9,7 @@
     (slot player)
     )
 
-(defglobal ?*player* = "O")
+;(defglobal ?*player* = "O")
 
 (deffacts board
     (line (sq1 1) (sq2 3) (sq3 2))
@@ -87,21 +87,21 @@
 )
 
 
-(deffunction swapplayer()
+/*(deffunction swapplayer()
     if(eq ?*player* "X") then (
         bind ?*player* "O")
     else (bind ?*player* "X")
     
     (printout t "Choosing player: " ?*player* crlf)
-)
+)*/
 
-(deffunction place-piece (?location ?playing)
-    (assert (occupied (square ?location) (player ?*player*)))
+(deffunction place-piece (?location ?piecetoplay)
+    (assert (occupied (square ?location) (player ?piecetoplay)))
     ;(swapplayer)
     (assert (state "swap"))
 )
 
-(deffunction not-player ()
+/*(deffunction not-player ()
     (
     	if(eq ?*player* "X") then 
         (
@@ -112,19 +112,29 @@
             return "X"
         )    
     )
-)
+)*/
 
-(defrule swapPlayer
+(defrule swapPlayerX
     (declare (salience 50))
     ?swapping <- (state "swap")
+    ?player <- (currentplayer "X")
     =>
-	(printout t "Swapping player from " ?*player*)    
-    (if(eq* ?*player* "X") 
-        then (bind ?*player* "O")
-    	else (bind ?*player* "X"))
+	(printout t "Swapping player from X to O" crlf)  
+    (retract ?player)  
+    (assert (currentplayer "O"))
     (retract ?swapping)
-    (assert (state "playing"))
-    (printout t " to " ?*player* crlf))
+    (assert (state "playing")))
+
+(defrule swapPlayerO
+    (declare (salience 50))
+    ?swapping <- (state "swap")
+    ?player <- (currentplayer "O")
+    =>
+	(printout t "Swapping player from O to X" crlf)  
+    (retract ?player)  
+    (assert (currentplayer "X"))
+    (retract ?swapping)
+    (assert (state "playing")))
     
 
 /* ****************************************
@@ -134,16 +144,16 @@
     (declare (salience 7))	
     ?playing <- (state "playing")
     (line (sq1 ?x) (sq2 ?y) (sq3 ?z))
+    (currentplayer ?piece)
     ;(occupied (square ?x) (player ?*player*))
     ;(occupied (square ?y) (player ?*player*))
-    (occupied (square ?x) (player ?player&:(eq ?player ?*player*)))
-    (occupied (square ?y) (player ?player&:(eq ?player ?*player*)))
-    
+    (occupied (square ?x) (player ?playedpiece&:(eq ?playedpiece ?piece)));?*player*
+    (occupied (square ?y) (player ?playedpiece&:(eq ?playedpiece ?piece)))
     (not(occupied (square ?z)))
      =>
     	 (facts)
     	 (printout t "rule one: " ?z  ?*player* crlf)
-         (assert (occupied (square ?z) (player ?*player*)))
+         (assert (occupied (square ?z) (player ?piece)))
     	 (retract ?playing)
     	 (assert (state "ended"))
     	 (facts)
@@ -155,13 +165,16 @@
 (defrule two 
     (declare (salience 6))
     ?playing <- (state "playing")
+    (currentplayer ?piece)
     (line (sq1 ?x) (sq2 ?y) (sq3 ?z))
-    (occupied (square ?x) (player ?player&:(neq ?player ?*player*)))
-    (occupied (square ?y) (player ?player&:(neq ?player ?*player*)))
+    (occupied (square ?x) (player ?playedpiece&:(neq ?piece ?playedpiece)))
+    (occupied (square ?y) (player ?playedpiece&:(neq ?piece ?playedpiece)))
     (not(occupied (square ?z)))
      =>
     	 (printout t "rule two: " ?z crlf)
-         (place-piece ?z ?playing)       
+         (place-piece ?z ?piece)       
+    	 (retract ?playing)
+		 (assert (state "swap"))
 )
 /* ***************************************
  Rule 3: choose a square that gives you a double row 
@@ -169,17 +182,20 @@
 (defrule three 
     (declare (salience 5))
     ?playing <- (state "playing")
+    (currentplayer ?piece)
     (line (sq1 ?x) (sq2 ?y) (sq3 ?z) ) ;Find a line
     (line (sq1 ?a&:(eq ?a ~?x)) (sq2 ?b&:(eq ?b ~?y)) (sq3 ?z) ) ;Find a different line that shares a square with the first line
     
-    (occupied (square ?x) (player ?player&:(eq ?player ?*player*))) ; We want one end of the first line to be occupied 
-    (occupied (square ?a) (player ?player&:(eq ?player ?*player*))) ; And one end of the other line to be occupied
+    (occupied (square ?x) (player ?playedpiece&:(eq ?piece ?playedpiece))) ; We want one end of the first line to be occupied 
+    (occupied (square ?a) (player ?playedpiece&:(eq ?piece ?playedpiece))) ; And one end of the other line to be occupied
     (not (occupied (square ?y))) ; The other squares need to be not occupied 
     (not (occupied (square ?b)))
     (not (occupied (square ?z)))
     => 
-    (printout t "three: " ?z ?player crlf)
-    (place-piece ?z ?playing)
+	     (printout t "three: " ?z ?piece crlf)
+	     (place-piece ?z ?piece)
+	     (retract ?playing)
+		 (assert (state "swap"))
     	
 )
 /* ***************************************
@@ -200,11 +216,12 @@
 (defrule centre-piece 
     (declare (salience 3))
     ?playing <- (state "playing")
+    (currentplayer ?piece)
     (centre ?x)
     (not (occupied (square ?x)))
     =>
-    	    (printout t "five" ?x ?*player* crlf) 
-	    (place-piece ?x ?playing)
+    	    (printout t "five" ?x ?piece crlf) 
+	    (place-piece ?x ?piece)
 
 )
 
@@ -215,11 +232,12 @@
 (defrule place-corner
     (declare (salience 2))
     ?playing <- (state "playing")
+    (currentplayer ?piece)
     (corner ?x)
     (not (occupied (square ?x)))
     =>
-	    (printout t "Take corner: " ?x ?*player* ?playing crlf)
-	    (place-piece ?x ?playing)
+	    (printout t "Take corner: " ?x ?piece ?playing crlf)
+	    (place-piece ?x ?piece)
 )
 
 /* ***************************************
@@ -229,11 +247,12 @@
 (defrule seven 
     (declare (salience 1))
     ?playing <- (state "playing")
+    (currentplayer ?piece)
     (square ?x)
     (not (occupied (square ?x)))
     => 
     (printout t "random square: " ?x crlf)
-    (place-piece ?x ?playing)
+    (place-piece ?x ?piece)
 )
 
 /*(defrule swap-player
@@ -250,7 +269,6 @@
 )*/
 
 (defrule checkended
-    ?state <- (state ~"playing")
     (occupied (player ?1) (square 1))
     (occupied (player ?2) (square 2))
     (occupied (player ?3) (square 3))
@@ -261,13 +279,12 @@
     (occupied (player ?8) (square 8))
     (occupied (player ?9) (square 9))
     =>
-    	(retract ?state)
     	(printout t ?1 ?2 ?3 crlf ?4 ?5 ?6 crlf ?7 ?8 ?9 crlf)
 )
 
 (reset)
 (assert (state "playing"))
-
+(assert (currentplayer "X"))
 
 ;(assert (occupied (square 1) (player "O")))
 ;(assert (occupied (square 2) (player "O")))
