@@ -9,7 +9,7 @@
     (slot player)
     )
 
-(defglobal ?*player* = "X")
+(defglobal ?*player* = "O")
 
 (deffacts board
     (line (sq1 1) (sq2 3) (sq3 2))
@@ -86,11 +86,19 @@
     (square 9)
 )
 
-(assert (state "playing"))
+
+(deffunction swapplayer()
+    if(eq ?*player* "X") then (
+        bind ?*player* "O")
+    else (bind ?*player* "X")
+    
+    (printout t "Choosing player: " ?*player* crlf)
+)
 
 (deffunction place-piece (?location ?playing)
     (assert (occupied (square ?location) (player ?*player*)))
-    (retract ?playing)
+    ;(swapplayer)
+    (assert (state "swap"))
 )
 
 (deffunction not-player ()
@@ -106,19 +114,35 @@
     )
 )
 
-/* ***************************************
+(defrule swapPlayer
+    (declare (salience 50))
+    ?swapping <- (state "swap")
+    =>
+	(printout t "Swapping player from " ?*player*)    
+    (if(eq* ?*player* "X") 
+        then (bind ?*player* "O")
+    	else (bind ?*player* "X"))
+    (retract ?swapping)
+    (assert (state "playing"))
+    (printout t " to " ?*player* crlf))
+    
+
+/* ****************************************
  Rule 1 : choose a square to get 3 in a row 
  *****************************************/
 (defrule one
-    (declare (salience 7))
+    (declare (salience 7))	
     ?playing <- (state "playing")
     (line (sq1 ?x) (sq2 ?y) (sq3 ?z))
+    ;(occupied (square ?x) (player ?*player*))
+    ;(occupied (square ?y) (player ?*player*))
     (occupied (square ?x) (player ?player&:(eq ?player ?*player*)))
     (occupied (square ?y) (player ?player&:(eq ?player ?*player*)))
+    
     (not(occupied (square ?z)))
      =>
+    (printout t "rule one: " ?z  ?*player* crlf)
          (place-piece ?z ?playing)
-         (printout t "rule one: " ?z crlf)
     	 (retract ?playing)
     	 (assert (state "ended"))
 )
@@ -140,8 +164,9 @@
     (not(occupied (square ?z)))
     
      =>
+    (printout t "rule two: " ?z crlf)
          (place-piece ?z ?playing)
-         (printout t "rule two: " ?z crlf) 
+         
 )
 /* ***************************************
  Rule 3: choose a square that gives you a double row 
@@ -158,8 +183,9 @@
     (not (occupied (square ?b)))
     (not (occupied (square ?z)))
     => 
+    (printout t "three: " ?z ?player crlf)
     (place-piece ?z ?playing)
-    	(printout t "three" crlf)
+    	
 )
 /* ***************************************
  Rule 4 : choose a square that would give them a double row 
@@ -181,9 +207,10 @@
     ?playing <- (state "playing")
     (centre ?x)
     (not (occupied (square ?x)))
-    => 
+    =>
+    	    (printout t "five" ?x ?*player* crlf) 
 	    (place-piece ?x ?playing)
-	    (printout t "five" crlf)
+
 )
 
 /* ***************************************
@@ -196,7 +223,7 @@
     (corner ?x)
     (not (occupied (square ?x)))
     =>
-	    (printout t "Take corner: " ?x crlf)
+	    (printout t "Take corner: " ?x ?*player* crlf)
 	    (place-piece ?x ?playing)
 )
 
@@ -214,7 +241,8 @@
     (place-piece ?x ?playing)
 )
 
-(defrule swap-player
+/*(defrule swap-player
+    (declare (salience -1143245423))
     (not(state "playing"))
     =>
     (
@@ -224,7 +252,7 @@
     (assert(state "playing"))
     (printout t "CURRENT PLAYER IS " ?*player* crlf)
     
-)
+)*/
 
 (defrule checkended
     ?state <- (state ~"playing")
@@ -243,5 +271,10 @@
 )
 
 (reset)
+(assert (state "playing"))
+
+
+;(assert (occupied (square 1) (player "O")))
+;(assert (occupied (square 2) (player "O")))
 (agenda)
 (run)
