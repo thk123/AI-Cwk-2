@@ -1,16 +1,30 @@
-;(watch all)
+/*******************TEMPLATES******************/
+
+/***********************************************
+ * any three squares sq1,sq2,sq3 that form a 
+ * straight line in any order
+ ***********************************************/
 (deftemplate line 
     (slot sq1) 
     (slot sq2) 
-    (slot sq3))
+    (slot sq3)
+)
 
+/***********************************************
+ * for each occupied square, where p is either
+ * X or O
+ ***********************************************/
 (deftemplate occupied 
     (slot square)	
     (slot player)
-    )
+)
 
-;(defglobal ?*player* = "O")
+/*******************FACTS**********************/
 
+/***********************************************
+ * representation of the board with all the lines 
+ * and special squares
+ ***********************************************/
 (deffacts board
     (line (sq1 1) (sq2 3) (sq3 2))
     (line (sq1 1) (sq2 2) (sq3 3))
@@ -86,105 +100,99 @@
     (square 9)
 )
 
+/******************FUNCTIONS********************/
 
-/*(deffunction swapplayer()
-    if(eq ?*player* "X") then (
-        bind ?*player* "O")
-    else (bind ?*player* "X")
-    
-    (printout t "Choosing player: " ?*player* crlf)
-)*/
-
+/***********************************************
+ * function to place a piece on the board in
+ * square location with piece piectoplay
+ ***********************************************/
 (deffunction place-piece (?location ?piecetoplay)
     (assert (occupied (square ?location) (player ?piecetoplay)))
-    ;(swapplayer)
-    (assert (state "swap"))
 )
 
-/*(deffunction not-player ()
-    (
-    	if(eq ?*player* "X") then 
-        (
-        	return "O"
-        )
-        else
-        (
-            return "X"
-        )    
-    )
-)*/
+/***********************************************
+ * Set the current state to swap for swapping players
+ ***********************************************/
+(deffunction swap(?currentstate)
+    (retract ?currentstate)
+    (assert(state "swap"))
+)
 
+/*******************RULES**********************/
+
+/***********************************************
+ * When we are in swap state and active player is  
+ * X, then we make the active player O
+ ***********************************************/
 (defrule swapPlayerX
-    (declare (salience 50))
-    ?swapping <- (state "swap")
-    ?player <- (currentplayer "X")
-    =>
-	(printout t "Swapping player from X to O" crlf)  
-    (retract ?player)  
-    (assert (currentplayer "O"))
-    (retract ?swapping)
-    (assert (state "playing")))
+    (declare (salience 50)) ; if we are trying to swap player, we must do this first
+    ?swapping <- (state "swap") ; Check we are trying to swap player 
+    ?player <- (currentplayer "X") ; are we player X
+    => 
+    	(retract ?player) ; This is no longer the current player  
+    	(assert (currentplayer "O")) ; Nought is now the current player
+    	(retract ?swapping) ; We are done swapping
+    	(assert (state "playing")) ; Go back in to main play state
+)
 
+/***********************************************
+ * When we are in swap state and active player is  
+ * O, then we make the active player X
+ ***********************************************/
 (defrule swapPlayerO
-    (declare (salience 50))
-    ?swapping <- (state "swap")
-    ?player <- (currentplayer "O")
-    =>
-	(printout t "Swapping player from O to X" crlf)  
-    (retract ?player)  
-    (assert (currentplayer "X"))
-    (retract ?swapping)
-    (assert (state "playing")))
-    
+    (declare (salience 50)) ; if we are trying to swap player, we must do this first
+    ?swapping <- (state "swap") ; Check we are trying to swap player
+    ?player <- (currentplayer "O") ; are we player O
+    =>  
+    	(retract ?player) ; This is no longer the current player  
+    	(assert (currentplayer "X")) ; Cross is now the current player
+    	(retract ?swapping) ; We are done swapping
+    	(assert (state "playing")) ; Go back in to main play state
+)    
 
 /* ****************************************
  Rule 1 : choose a square to get 3 in a row 
  *****************************************/
 (defrule one
-    (declare (salience 7))	
-    ?playing <- (state "playing")
-    (line (sq1 ?x) (sq2 ?y) (sq3 ?z))
-    (currentplayer ?piece)
-    ;(occupied (square ?x) (player ?*player*))
-    ;(occupied (square ?y) (player ?*player*))
-    (occupied (square ?x) (player ?playedpiece&:(eq ?playedpiece ?piece)));?*player*
-    (occupied (square ?y) (player ?playedpiece&:(eq ?playedpiece ?piece)))
-    (not(occupied (square ?z)))
+    (declare (salience 7))	; This is the highest priority rule
+    ?playing <- (state "playing") ; Check we are looking to play a rule
+    (line (sq1 ?x) (sq2 ?y) (sq3 ?z)) ; Find a line in the board
+    (currentplayer ?piece) ; Get the current playing piece 
+    
+    (occupied (square ?x) (player ?playedpiece&:(eq ?playedpiece ?piece))) ; Is the first square occupied by the current player
+    (occupied (square ?y) (player ?playedpiece&:(eq ?playedpiece ?piece))) ; And the second square occupied by the current player
+    (not(occupied (square ?z))) ; but the last square empty
      =>
-    	 (facts)
-    	 (printout t "rule one: " ?z  ?*player* crlf)
-         (assert (occupied (square ?z) (player ?piece)))
-    	 (retract ?playing)
+         (assert (occupied (square ?z) (player ?piece))) ; This square is now occupied by the current player
+    	 (retract ?playing) ; This a winning move so we are done
     	 (assert (state "ended"))
-    	 (facts)
 )
 
 /* ***************************************
  Rule 2: choose a square which would give them 3 in a row
  *****************************************/
 (defrule two 
-    (declare (salience 6))
-    ?playing <- (state "playing")
-    (currentplayer ?piece)
-    (line (sq1 ?x) (sq2 ?y) (sq3 ?z))
-    (occupied (square ?x) (player ?playedpiece&:(neq ?piece ?playedpiece)))
-    (occupied (square ?y) (player ?playedpiece&:(neq ?piece ?playedpiece)))
-    (not(occupied (square ?z)))
+    (declare (salience 6)) ; This is the second rule to execute so 2nd highest priority
+    ?playing <- (state "playing") ; Check we are looking to play a rule
+    (currentplayer ?piece) ; Get the current playing piece 
+    (line (sq1 ?x) (sq2 ?y) (sq3 ?z)) ; Find a line in the board
+    (occupied (square ?x) (player ?playedpiece&:(neq ?piece ?playedpiece))) ; Check the first square is occupied by the other player
+    (occupied (square ?y) (player ?playedpiece&:(neq ?piece ?playedpiece))) ; And the second square
+    (not(occupied (square ?z))) ; But the last square is empty
      =>
-    	 (printout t "rule two: " ?z crlf)
-         (place-piece ?z ?piece)       
-    	 (retract ?playing)
-		 (assert (state "swap"))
+         (place-piece ?z ?piece) ; Place the current players piece in the empty square     
+    	 (swap ?playing) ; We are now swapping players
 )
+
 /* ***************************************
  Rule 3: choose a square that gives you a double row 
  *****************************************/
 (defrule three 
     (declare (salience 5))
-    ?playing <- (state "playing")
-    (currentplayer ?piece)
-    (line (sq1 ?x) (sq2 ?y) (sq3 ?z) ) ;Find a line
-    (line (sq1 ?a&:(eq ?a ~?x)) (sq2 ?b&:(eq ?b ~?y)) (sq3 ?z) ) ;Find a different line that shares a square with the first line
+    ?playing <- (state "playing") ; Check we are looking to play a rule
+    (currentplayer ?piece) ; Get the current playing piece 
+    (line (sq1 ?x) (sq2 ?y) (sq3 ?z) ) ; Find a line
+    (line (sq1 ?a&:(eq ?a ~?x)) (sq2 ?b&:(eq ?b ~?y)) (sq3 ?z) ) ; Find a different line that shares a square with the first line
     
     (occupied (square ?x) (player ?playedpiece&:(eq ?piece ?playedpiece))) ; We want one end of the first line to be occupied 
     (occupied (square ?a) (player ?playedpiece&:(eq ?piece ?playedpiece))) ; And one end of the other line to be occupied
@@ -192,84 +200,90 @@
     (not (occupied (square ?b)))
     (not (occupied (square ?z)))
     => 
-	     (printout t "three: " ?z ?piece crlf)
-	     (place-piece ?z ?piece)
-	     (retract ?playing)
-		 (assert (state "swap"))
-    	
+	     (place-piece ?z ?piece) ; Place the current players piece in the crucial square
+	     (swap ?playing) ; We are now swapping players
 )
-/* ***************************************
+/*****************************************
  Rule 4 : choose a square that would give them a double row 
  *****************************************/
 (defrule four 
     (declare (salience 4))
-    ?playing <- (state "playing")
-    (eq 1 1) 
+    ?playing <- (state "playing") ; Check we are looking to play a rule
+    (currentplayer ?piece) ; Get the current playing piece 
+    (line (sq1 ?x) (sq2 ?y) (sq3 ?z) ) ; Find a line
+    (line (sq1 ?a&:(eq ?a ~?x)) (sq2 ?b&:(eq ?b ~?y)) (sq3 ?z) ) ;Find a different line that shares a square with the first line
+    
+    (occupied (square ?x) (player ?playedpiece&:(neq ?piece ?playedpiece))) ; We want one end of the first line to be occupied 
+    (occupied (square ?a) (player ?playedpiece&:(neq ?piece ?playedpiece))) ; And one end of the other line to be occupied
+    (not (occupied (square ?y))) ; The other squares need to be not occupied 
+    (not (occupied (square ?b)))
+    (not (occupied (square ?z)))
     => 
-    	(printout t "four" crlf)
+	     (place-piece ?z ?piece) ; Place the current players piece in the crucial square
+	     (swap ?playing) ; We are now swapping players
 )
 
-/* ***************************************
+/*****************************************
  Rule 5 : choose centre square
  *****************************************/
-
 (defrule centre-piece 
     (declare (salience 3))
-    ?playing <- (state "playing")
-    (currentplayer ?piece)
-    (centre ?x)
-    (not (occupied (square ?x)))
-    =>
-    	    (printout t "five" ?x ?piece crlf) 
-	    (place-piece ?x ?piece)
-
+    ?playing <- (state "playing") ; Check we are looking to play a rule
+    (currentplayer ?piece) ; Get the current playing piece 
+    (centre ?x) ; Get the centre square
+    (not (occupied (square ?x))); Check the centre square is unoccupied
+    => 
+	    (place-piece ?x ?piece) ; Place the current players piece in the middle
+		(swap ?playing) ; We are now swapping players
 )
 
-/* ***************************************
+/*****************************************
  Rule 6: choose corner square
  *****************************************/
-
 (defrule place-corner
     (declare (salience 2))
-    ?playing <- (state "playing")
-    (currentplayer ?piece)
-    (corner ?x)
-    (not (occupied (square ?x)))
+    ?playing <- (state "playing") ; Check we are looking to play a rule
+    (currentplayer ?piece) ; Get the current playing piece 
+    (corner ?x) ; Get a corner square
+    (not (occupied (square ?x))) ; Check the corner square is not occupied
     =>
-	    (printout t "Take corner: " ?x ?piece ?playing crlf)
-	    (place-piece ?x ?piece)
+	    (place-piece ?x ?piece) ; Place the current players piece in the corner square
+    	(swap ?playing) ; We are now swapping players
 )
 
-/* ***************************************
+/*****************************************
  Rule 7 : choose another square
  *****************************************/
-
 (defrule seven 
     (declare (salience 1))
-    ?playing <- (state "playing")
-    (currentplayer ?piece)
-    (square ?x)
-    (not (occupied (square ?x)))
+    ?playing <- (state "playing") ; Check we are looking to play a rule
+    (currentplayer ?piece) ; Get the current playing piece 
+    (square ?x) ; Find a square 
+    (not (occupied (square ?x))) ; Check the square is not occupied
     => 
-    (printout t "random square: " ?x crlf)
-    (place-piece ?x ?piece)
+   		(place-piece ?x ?piece) ; Place the current players piece in the square
+    	(swap ?playing) ; We are now swapping players
 )
 
-/*(defrule swap-player
-    (declare (salience -1143245423))
-    (not(state "playing"))
+/*****************************************
+ * If a player has won, "occupy" the 
+ * remaining squares with dashes so the
+ * board gets drawn by rule checkend
+ *****************************************/
+(defrule fillinblanks
+   	(state "ended") ; The game has ended (eg someone won)
+    (square ?x) ; Find a square
+    (not (occupied (square ?x))) ; If that square is unoccupied 
     =>
-    (
-        if(eq* ?*player* "X") then (bind ?*player* "O")
-    	else (bind ?*player* "X")
-    )
-    (assert(state "playing"))
-    (printout t "CURRENT PLAYER IS " ?*player* crlf)
-    
-)*/
+ 		(assert (occupied (square ?x) (player "-"))) ; "Occupy" it with a dash   	
+)
 
+/*****************************************
+ * Check to see if the board is full, if so
+ * print it out
+ *****************************************/
 (defrule checkended
-    (occupied (player ?1) (square 1))
+    (occupied (player ?1) (square 1)) ; All the squares occupied
     (occupied (player ?2) (square 2))
     (occupied (player ?3) (square 3))
     (occupied (player ?4) (square 4))
@@ -279,14 +293,12 @@
     (occupied (player ?8) (square 8))
     (occupied (player ?9) (square 9))
     =>
-    	(printout t ?1 ?2 ?3 crlf ?4 ?5 ?6 crlf ?7 ?8 ?9 crlf)
+    	(printout t ?1 ?2 ?3 crlf ?4 ?5 ?6 crlf ?7 ?8 ?9 crlf) ; Print out the board
 )
 
 (reset)
+
 (assert (state "playing"))
 (assert (currentplayer "X"))
 
-;(assert (occupied (square 1) (player "O")))
-;(assert (occupied (square 2) (player "O")))
-(agenda)
 (run)
